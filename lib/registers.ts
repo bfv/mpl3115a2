@@ -19,7 +19,7 @@ export const CTRL_REG1 = 0x26;
 
 // }
 
-enum CtrlReg1 {
+export enum CtrlReg1 {
     ALT = 0b10000000,
     OSR1 = 0b00000000,
     OSR2 = 0b00001000,
