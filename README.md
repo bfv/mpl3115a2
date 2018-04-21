@@ -26,3 +26,8 @@ Plans are:
 - include altimeter
 - reading the mpl3115a2 buffers
 - asynchronous operation (rxjs)
+
+# mpl3115a2 documentation
+
+https://www.nxp.com/docs/en/data-sheet/MPL3115A2.pdf
+https://www.nxp.com/docs/en/application-note/AN4519.pdf
