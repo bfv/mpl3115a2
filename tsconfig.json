@@ -8,5 +8,6 @@
     },
     "files": [
       "lib/index.ts",
+      "lib/test.ts"
     ]
 }
