@@ -4,7 +4,7 @@ import { CTRL_REG1, CTRL_REG2, CTRL_REG3, CTRL_REG4, CTRL_REG5,PT_DATA_CFG, WHO_
 import { OUT_P_MSB, OUT_P_CSB, OUT_P_LSB, OUT_T_MSB, OUT_T_LSB } from './registers';
 import { OperatingMode } from './registers';
 import { PressureReading } from './reading';
-import { PressureDataBuffer, TemperatureDataBuffer } from './databuffer';
+import { DataBuffer } from './databuffer';
 
 export class MPL3115A2 {
 
@@ -127,16 +127,16 @@ export class MPL3115A2 {
         return value;
     }
 
-    private calcPressure(buffer: PressureDataBuffer): number {
+    private calcPressure(buffer: DataBuffer): number {
 
         var pressure;
 
         // use msb, csb and bit 7&6 of lsb for integer part  (of Q18.2 fixed point)
-        pressure = (((buffer.msb << 8) + buffer.csb) << 2) + ((buffer.lsb & 0b11000000) >> 6);
+        pressure = (((buffer.p_msb << 8) + buffer.p_csb) << 2) + ((buffer.p_lsb & 0b11000000) >> 6);
 
         // add fractional part, 2 bit => resolution = 0.25 Pa
-        pressure += ((buffer.lsb & 0b00100000) >> 5) / 2;
-        pressure += ((buffer.lsb & 0b00010000) >> 4) / 4;
+        pressure += ((buffer.p_lsb & 0b00100000) >> 5) / 2;
+        pressure += ((buffer.p_lsb & 0b00010000) >> 4) / 4;
 
         return pressure / 100;  // return hPa (millibar)
     }
@@ -149,22 +149,21 @@ export class MPL3115A2 {
 
         while((this.readByte(0x00) & 0x08) === 0) {}
 
-        let pbuffer = new PressureDataBuffer();
+        let buffer = new DataBuffer();
 
-        pbuffer.msb = this.readByte(OUT_P_MSB);
-        pbuffer.csb = this.readByte(OUT_P_CSB);
-        pbuffer.lsb = this.readByte(OUT_P_LSB);
+        buffer.p_msb = this.readByte(OUT_P_MSB);
+        buffer.p_csb = this.readByte(OUT_P_CSB);
+        buffer.p_lsb = this.readByte(OUT_P_LSB);
 
-        let tbuffer = new TemperatureDataBuffer();
-        tbuffer.msb = this.readByte(OUT_T_MSB);
-        tbuffer.lsb = this.readByte(OUT_T_LSB);
+        buffer.t_msb = this.readByte(OUT_T_MSB);
+        buffer.t_lsb = this.readByte(OUT_T_LSB);
 
         //var tempWord = this.bus.readWordSync(this.deviceAddress, OUT_T_MSB);
 
         return {
-            barometer: this.calcPressure(pbuffer),
+            barometer: this.calcPressure(buffer),
             mode: mode,
-            temperature: this.toCelsius(tbuffer),
+            temperature: this.toCelsius(buffer),
         };
     }  // getReading
 
@@ -172,8 +171,8 @@ export class MPL3115A2 {
         return this.bus.readByteSync(this.deviceAddress, register);
     }
 
-    private toCelsius(buffer: TemperatureDataBuffer): number {
-        let rawTemp = (buffer.lsb << 8) | (buffer.msb & 0xff);
+    private toCelsius(buffer: DataBuffer): number {
+        let rawTemp = (buffer.t_lsb << 8) | (buffer.t_msb & 0xff);
         return this.toCelsius2(rawTemp);
     }
 
