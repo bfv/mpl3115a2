@@ -14,7 +14,7 @@ export class MPL3115A2 {
      * @return true if device is standy
      */
     get standy(): boolean {
-        let value = this.bus.readByteSync(this.deviceAddress, CTRL_REG1);
+        let value = this.readByte(CTRL_REG1);
         return ((value & CtrlReg1.SBYB) === 0);
     }
 
@@ -46,15 +46,6 @@ export class MPL3115A2 {
     }
 
     /**
-     * Returns the device identifier, 0xc4 by default
-     * @return device identifier
-     */
-    whoAmI(): number {
-        let value = this.bus.readByteSync(this.deviceAddress, WHO_AM_I);
-        return value;
-    }
-
-    /**
      * Get a single reading and leaves the device standy. Don't mix this with either active modes.
      * If no mode is specified, the current operating of the device is taken.
      *
@@ -69,32 +60,54 @@ export class MPL3115A2 {
 
         // reset
         let value = (mode * CtrlReg1.ALT) | CtrlReg1.OSR128 | CtrlReg1.SBYB;
-        this.bus.writeByteSync(this.deviceAddress, CTRL_REG1, value);
+        this.writeByte(CTRL_REG1, value);
 
         value = CtrlReg1.OSR128 | CtrlReg1.OST | (mode * CtrlReg1.ALT);
 
         this.readSingleValue = true;
-        this.bus.writeByteSync(this.deviceAddress, CTRL_REG1, value);
+        this.writeByte(CTRL_REG1, value);
 
         return this.getReading(mode);
     }
 
     /**
-     * Brings the device in standby mode. The other CtrlReg1 settings are unaltered
-     */
-    toStandby(): void {
-        let value = this.bus.readByteSync(this.deviceAddress, CTRL_REG1);
-        value &= (0xff ^ CtrlReg1.SBYB);
-        this.bus.writeByteSync(this.deviceAddress, CTRL_REG1, value);
+     * set the time between samples. The enum denotes seconds.
+    */
+    setSampleTime(sampleTime: CtrlReg2) {
+
+        if (sampleTime > 0b1111) {
+            throw new Error('value is not a sample time');
+        }
+
+        let currentValue = this.readByte(CTRL_REG2) & 0b11110000;
+        this.writeByte(CTRL_REG2, currentValue | sampleTime);
     }
 
     /**
      * Activates the device. The other CtrlReg1 settings are unaltered
      */
     toActive(): void {
-        let value = this.bus.readByteSync(this.deviceAddress, CTRL_REG1);
+        let value = this.readByte(CTRL_REG1);
         value |= CtrlReg1.SBYB;
-        this.bus.writeByteSync(this.deviceAddress, CTRL_REG1, value);
+        this.writeByte(CTRL_REG1, value);
+    }
+
+    /**
+     * Brings the device in standby mode. The other CtrlReg1 settings are unaltered
+     */
+    toStandby(): void {
+        let value = this.readByte(CTRL_REG1);
+        value &= (0xff ^ CtrlReg1.SBYB);
+        this.writeByte(CTRL_REG1, value);
+    }
+
+    /**
+     * Returns the device identifier, 0xc4 by default
+     * @return device identifier
+     */
+    whoAmI(): number {
+        let value = this.readByte(WHO_AM_I);
+        return value;
     }
 
     private calcPressure(msb: number, csb: number, lsb: number): number {
@@ -117,11 +130,11 @@ export class MPL3115A2 {
             throw new Error('Device is in standby mode; cannot get readings');
         }
 
-        while((this.bus.readByteSync(this.deviceAddress, 0x00) & 0x08) === 0) {}
+        while((this.readByte(0x00) & 0x08) === 0) {}
 
-        var p_msb = this.bus.readByteSync(this.deviceAddress, OUT_P_MSB);
-        var p_csb = this.bus.readByteSync(this.deviceAddress, OUT_P_CSB);
-        var p_lsb = this.bus.readByteSync(this.deviceAddress, OUT_P_LSB);
+        var p_msb = this.readByte(OUT_P_MSB);
+        var p_csb = this.readByte(OUT_P_CSB);
+        var p_lsb = this.readByte(OUT_P_LSB);
 
         var tempWord = this.bus.readWordSync(this.deviceAddress, OUT_T_MSB);
 
@@ -130,6 +143,10 @@ export class MPL3115A2 {
             mode: mode,
             temperature: this.toCelsius(tempWord),
         };
+    }  // getReading
+
+    private readByte(register: number): number {
+        return this.bus.readByteSync(this.deviceAddress, register);
     }
 
     private toCelsius(rawTemp: number): number {
@@ -141,6 +158,10 @@ export class MPL3115A2 {
         }
 
         return -((~halfDegrees & 0xff) / 2); // Temp -ve
+    }
+
+    private writeByte(register: number, value: number) {
+        this.bus.writeByteSync(this.deviceAddress, register, value);
     }
 
 }
