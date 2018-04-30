@@ -157,7 +157,7 @@ export class MPL3115A2 {
     }
 
     private toCelsius(buffer: TemperatureDataBuffer): number {
-        let rawTemp = (buffer.msb << 8) | (buffer.lsb & 0xff);
+        let rawTemp = (buffer.lsb << 8) | (buffer.msb & 0xff);
         return this.toCelsius2(rawTemp);
     }
 
