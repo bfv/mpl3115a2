@@ -98,6 +98,22 @@ export enum CtrlReg2 {
     LOAD_OUTPUT = 0b00100000,
     ALARM_SEL = 0b00010000,
     // ST[3:0] = x, where 2^x is the number of second between samples
+    ST_1     = 0b0000,
+    ST_2     = 0b0001,
+    ST_4     = 0b0010,
+    ST_8     = 0b0011,
+    ST_16    = 0b0100,
+    ST_32    = 0b0101,
+    ST_64    = 0b0110,
+    ST_128   = 0b0111,
+    ST_256   = 0b1000,
+    ST_512   = 0b1001,
+    ST_1024  = 0b1010,
+    ST_2048  = 0b1011,
+    ST_4096  = 0b1100,
+    ST_8192  = 0b1101,
+    ST_16384 = 0b1110,
+    ST_32768 = 0b1111
 }
 
 export const CTRL_REG3 = 0x28;
