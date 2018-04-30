@@ -1,7 +1,7 @@
 import * as i2cbus from 'i2c-bus';
-import { CtrlReg1, CtrlReg2, CtrlReg3, CtrlReg4, CtrlReg5, PtDataCfg, OUT_T_LSB } from './registers';
-import { CTRL_REG1, CTRL_REG2, CTRL_REG3, CTRL_REG4, CTRL_REG5,PT_DATA_CFG, WHO_AM_I } from './registers';
-import { OUT_P_MSB, OUT_P_CSB, OUT_P_LSB, OUT_T_MSB } from './registers';
+import { CtrlReg1, CtrlReg2, CtrlReg3, CtrlReg4, CtrlReg5, PtDataCfg, FStatus } from './registers';
+import { CTRL_REG1, CTRL_REG2, CTRL_REG3, CTRL_REG4, CTRL_REG5,PT_DATA_CFG, WHO_AM_I, F_STATUS } from './registers';
+import { OUT_P_MSB, OUT_P_CSB, OUT_P_LSB, OUT_T_MSB, OUT_T_LSB } from './registers';
 import { OperatingMode } from './registers';
 import { PressureReading } from './reading';
 import { PressureDataBuffer, TemperatureDataBuffer } from './databuffer';
@@ -69,6 +69,22 @@ export class MPL3115A2 {
         this.writeByte(CTRL_REG1, value);
 
         return this.getReading(mode);
+    }
+
+    /**
+     * return true if FIFO is overflowed
+     */
+    isOverflowed(): boolean {
+        let fstatus = this.readByte(F_STATUS);
+        return (fstatus & FStatus.F_OVF) > 0;
+    }
+
+    /**
+     * return true is watermark is reached
+     */
+    isWaterMarkReached(): boolean {
+        let fstatus = this.readByte(F_STATUS);
+        return (fstatus & FStatus.F_WMRK_FLAG) > 0;
     }
 
     /**
