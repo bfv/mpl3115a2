@@ -39,3 +39,5 @@ typings/
 .env
 
 dist/
+
+doc/
