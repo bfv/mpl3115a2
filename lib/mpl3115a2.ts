@@ -1,6 +1,6 @@
 import * as i2cbus from 'i2c-bus';
 import { CtrlReg1, CtrlReg2, CtrlReg3, CtrlReg4, CtrlReg5, PtDataCfg, FStatus } from './registers';
-import { CTRL_REG1, CTRL_REG2, CTRL_REG3, CTRL_REG4, CTRL_REG5,PT_DATA_CFG, WHO_AM_I, F_STATUS } from './registers';
+import { CTRL_REG1, CTRL_REG2, CTRL_REG3, CTRL_REG4, CTRL_REG5, F_DATA, F_STATUS, PT_DATA_CFG, WHO_AM_I } from './registers';
 import { OUT_P_MSB, OUT_P_CSB, OUT_P_LSB, OUT_T_MSB, OUT_T_LSB } from './registers';
 import { OperatingMode } from './registers';
 import { PressureReading } from './reading';
@@ -36,6 +36,29 @@ export class MPL3115A2 {
 
     constructor() {
         this.bus = i2cbus.openSync(1);
+    }
+
+    /**
+     * return the amount of samples in the FIFO buffer
+     */
+    getFifoDepth(): number {
+        return this.readByte(F_STATUS) & 0b00111111;
+    }
+
+    getFifoSamples(): PressureReading[] {
+
+        let depth = this.getFifoDepth();
+        if (depth == 0) {
+            return [];
+        }
+
+        let readings: PressureReading[] = [];
+        for (let i = 0; i < depth; i++) {
+            let buffer = this.readFirstBuffer();
+            readings.push(this.convertBufferToReading(buffer));
+        }
+
+        return readings;
     }
 
     /**
@@ -141,6 +164,15 @@ export class MPL3115A2 {
         return pressure / 100;  // return hPa (millibar)
     }
 
+    private convertBufferToReading(buffer: DataBuffer): PressureReading {
+
+        return {
+            barometer: this.calcPressure(buffer),
+            mode: this.operatingMode,
+            temperature: this.toCelsius(buffer)
+        };
+    }
+
     private getReading(mode: OperatingMode) {
 
         if (this.standy && !this.readSingleValue) {
@@ -166,6 +198,22 @@ export class MPL3115A2 {
             temperature: this.toCelsius(buffer),
         };
     }  // getReading
+
+    /**
+     * read the F_DATA buffer 5 times to fetch the oldest sample.
+     */
+    private readFirstBuffer(): DataBuffer {
+
+        let buffer = new DataBuffer();
+
+        buffer.p_msb = this.readByte(F_DATA);
+        buffer.p_csb = this.readByte(F_DATA);
+        buffer.p_lsb = this.readByte(F_DATA);
+        buffer.t_msb = this.readByte(F_DATA);
+        buffer.t_lsb = this.readByte(F_DATA);
+
+        return buffer;
+    }
 
     private readByte(register: number): number {
         return this.bus.readByteSync(this.deviceAddress, register);
