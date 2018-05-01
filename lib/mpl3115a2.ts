@@ -129,6 +129,7 @@ export class MPL3115A2 {
     toActive(): void {
         let value = this.readByte(CTRL_REG1);
         value |= CtrlReg1.SBYB;
+        value |= CtrlReg1.OSR128;
         this.writeByte(CTRL_REG1, value);
     }
 
