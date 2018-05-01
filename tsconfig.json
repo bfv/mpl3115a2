@@ -8,6 +8,7 @@
     },
     "files": [
       "lib/index.ts",
-      "lib/test.ts"
+      "lib/test.ts",
+      "lib/testfifo.ts"
     ]
 }
